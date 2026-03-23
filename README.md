@@ -8,4 +8,7 @@ A collection of Ansible playbooks built and tested on Ubuntu and Fedora (Red Hat
 
 ## How to run ?
 
-ansible-playbook playbooks/apache.yml -i localhost
+```bash
+ansible-playbook playbooks/apache.yml -i localhost,
+```
+
