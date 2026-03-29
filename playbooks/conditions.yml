@@ -1,0 +1,25 @@
+---
+- name: Install apache webserver
+  hosts: localhost
+  become: yes
+  gather_facts: yes
+
+  tasks:
+        - name: Update apt cache
+          ansible.builtin.apt:
+             update_cache: yes
+          when: ansible_os_family == "Debian"
+
+        - name: Install apache on Ubuntu
+          ansible.builtin.apt:
+                name: apache2
+                state: present
+          when: ansible_distribution == "Ubuntu"
+            
+        - name: Ensure apache is running and enabled
+          ansible.builtin.service:
+            name: apache2
+            state: started
+            enabled: yes
+          when: ansible_distribution == "Ubuntu"
+

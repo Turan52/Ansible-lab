@@ -1,0 +1,7 @@
+---
+- name: My first client's check remore connectivity
+  hosts: all
+
+  tasks: 
+          - name: test connectivity
+            ping:    

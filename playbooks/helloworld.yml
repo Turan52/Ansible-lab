@@ -1,0 +1,8 @@
+---
+- name: My second playbook
+  hosts: localhost
+
+
+  tasks:
+        - name: Print Hello World
+          debug: msg="study more and fix lagging"
