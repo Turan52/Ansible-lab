@@ -1,5 +1,5 @@
 ANSIBLE NOTES - Ubuntu (intermediate)
-continuation of ansible_basics_ubuntu.txt
+*continuation of ansible_basics_ubuntu.txt
 
 ---------------------------------------------------------------
 HOSTS FILE & VISUDO
@@ -7,6 +7,7 @@ HOSTS FILE & VISUDO
 The hosts file is where you define which machines Ansible talks to.
 
   cd /etc/ansible
+  cd /etc/ansible/playbooks
   ls -la && ls -ltr
   nano hosts
 
@@ -18,7 +19,7 @@ need to configure visudo. Open it with:
 
   visudo
 
-Add the line as shown in "visudo.png" (screenshot in the screenshots folder).
+Add the line as shown in "visudo.jpeg" (screenshot in the screenshots folder).
 This lets Ansible run tasks as root without getting blocked by permissions.
 
 become: yes in a playbook tells Ansible to execute that task as root.
@@ -40,7 +41,7 @@ Example config:
   timeout = 60
 
 timeout = 60 prevents the connection from dropping mid-playbook if a task
-takes a while. Useful when dealing with slower machines or heavier installs.
+takes a while. Useful when dealing with slower machines or heavier installs. (Especially on 20.04 and older)
 
 ---------------------------------------------------------------
 USER MODULE
@@ -69,7 +70,7 @@ gets hardcoded into the file itself.
 
 One thing to note - for the password hashing to work you need passlib installed:
 
-  apt install python3-passlib
+  apt install python3-passlib (sudo for non-root user)
 
 ---------------------------------------------------------------
 FILE MODULE & get_url
