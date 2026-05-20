@@ -1,0 +1,172 @@
+ANSIBLE NOTES - Ubuntu (intermediate)
+continuation of ansible_basics_ubuntu.txt
+
+---------------------------------------------------------------
+HOSTS FILE & VISUDO
+---------------------------------------------------------------
+The hosts file is where you define which machines Ansible talks to.
+
+  cd /etc/ansible
+  ls -la && ls -ltr
+  nano hosts
+
+Under the #Ex 1 section add your client's IP address.
+That's how Ansible knows what to target when you run a playbook.
+
+For privilege escalation to work on a normal user account you also
+need to configure visudo. Open it with:
+
+  visudo
+
+Add the line as shown in "visudo.png" (screenshot in the screenshots folder).
+This lets Ansible run tasks as root without getting blocked by permissions.
+
+become: yes in a playbook tells Ansible to execute that task as root.
+Without it, tasks that need root permissions will just fail.
+
+  become: yes   -- add this at the play level to apply it to all tasks,
+                   or per task if only some of them need it
+
+---------------------------------------------------------------
+ANSIBLE CONFIG FILE
+---------------------------------------------------------------
+  ls -l ~/.ansible.cfg                        (check if it exists)
+  ansible-config dump | grep CONFIG_FILE      (see which config is active)
+  nano ./ansible.cfg
+
+Example config:
+
+  [defaults]
+  timeout = 60
+
+timeout = 60 prevents the connection from dropping mid-playbook if a task
+takes a while. Useful when dealing with slower machines or heavier installs.
+
+---------------------------------------------------------------
+USER MODULE
+---------------------------------------------------------------
+Creating a user through a playbook:
+
+  tasks:
+    - name: Create user
+      user:
+        name: user
+        home: /home/user
+        shell: /bin/bash
+
+To also set a password you hash it so it's not sitting in plain text
+in the playbook. Anyone who can read the file shouldn't be able to
+just grab the password from it.
+
+  password: "{{ newpassword | password_hash('sha512') }}"
+
+You pass the actual password at runtime:
+
+  ansible-playbook changepass.yml --extra-vars newpassword=abc123
+
+Replace abc123 with whatever password you want. The point is it never
+gets hardcoded into the file itself.
+
+One thing to note - for the password hashing to work you need passlib installed:
+
+  apt install python3-passlib
+
+---------------------------------------------------------------
+FILE MODULE & get_url
+---------------------------------------------------------------
+Creating a directory or file:
+
+  - name: Create a directory
+    file:
+      path: /files/myfolder
+      state: directory     (use 'file' if you want a file instead)
+      mode: 0755
+      owner: user
+      group: user
+
+Downloading a file from a URL directly to the remote machine:
+
+  - name: Download a file
+    get_url:
+      url: https://example.com/file.tar.gz
+      dest: /files/myfolder/file.tar.gz
+      mode: 0755
+      owner: user
+      group: user
+
+---------------------------------------------------------------
+AD-HOC COMMANDS
+---------------------------------------------------------------
+Ad-hoc commands are for one-off tasks that you don't need to repeat.
+If you're doing something more than once, write a playbook instead.
+
+Basic syntax:
+  ansible [target] -m [module] -a "[options]"
+
+Ping:
+  ansible localhost -m ping
+
+Create a file on all remote clients:
+  ansible all -m file -a "path=/home/client/adhoc1 state=touch mode=700"
+
+Delete a file on all remote clients:
+  ansible all -m file -a "path=/home/client/adhoc1 state=absent"
+
+Copy a file to remote clients:
+  ansible all -m copy -a "src=/tmp/adhoc2 dest=/home/client/adhoc2"
+
+Install a package:
+  ansible all -m apt -a "name=telnet state=present"
+  (use apt on Ubuntu, yum/dnf on RHEL based systems)
+
+Start a service:
+  ansible all -m service -a "name=apache2 state=started"
+
+Start apache2 and enable at boot:
+  ansible all -m service -a "name=apache2 state=started enabled=yes"
+
+Check apache2 status on remote client:
+  ansible all -m shell -a "systemctl status apache2"
+
+Remove apache2:
+  ansible all -m apt -a "name=apache2 state=absent"
+
+Create a user on remote clients:
+  ansible all -m user -a "name=linuxubuntu home=/home/linuxubuntu shell=/bin/bash state=present"
+
+  present = create it, absent = remove it. Same logic as the package states.
+
+Add a user to a group:
+  ansible all -m user -a "name=linuxubuntu group=client"
+
+Delete a user:
+  ansible all -m user -a "name=linuxubuntu state=absent"
+  OR
+  ansible all -m shell -a "userdel linuxubuntu"
+
+Get full system info from remote client (useful for checking facts):
+  ansible all -m setup
+
+Btw  if you're creating one user, ad-hoc is fine.
+If you're creating multiple users or doing it repeatedly, use a playbook.
+
+---------------------------------------------------------------
+TAGS
+---------------------------------------------------------------
+Tags let you run only specific parts of a playbook instead of the whole thing.
+Handy when you're testing or only need to re-run one section.
+
+List all tags in a playbook:
+  ansible-playbook bytags.yml --list-tags
+
+Run only a specific tag:
+  ansible-playbook bytags.yml -t i-apache2
+
+---------------------------------------------------------------
+Note: Everything above is specific to Ubuntu. Package managers, package names,
+and sometimes even service names differ depending on the distro.
+apt on Ubuntu, dnf on Fedora, yum on older RHEL/CentOS - same concept,
+different syntax. Always check what your system is using before running
+a playbook you grabbed from somewhere else. Learned that the hard way.
+
+Fedora notes coming separately.
