@@ -1,0 +1,145 @@
+ANSIBLE NOTES - Ubuntu
+(switched to Fedora now, will add separate notes for that later)
+
+---------------------------------------------------------------
+INSTALLATION
+---------------------------------------------------------------
+
+(Either as root or a user with root privileges)
+
+sudo apt update
+sudo apt install software-properties-common
+sudo add-apt-repository --yes --update ppa:ansible/ansible
+sudo apt install ansible
+
+software-properties-common is needed so you can actually add the PPA.
+
+Note:  // The PPA (Personal Package Archive) gives you a newer Ansible than what Ubuntu ships
+by default, so worth adding it. PPAs are Ubuntu/Debian specific by the way, 
+on Fedora or RHEL you'd handle this differently (dnf install ansible or enabling 
+a different repo). //
+
+---------------------------------------------------------------
+RUNNING ANSIBLE
+---------------------------------------------------------------
+Just ansible by itself = ad-hoc mode, no playbook needed.
+  ansible localhost -m ping  (basic test to check it works)
+
+With a playbook:
+  ansible-playbook /path/to/file.yml
+
+---------------------------------------------------------------
+PLAYBOOK YAML STRUCTURE - this tripped me up at first
+---------------------------------------------------------------
+YAML cares about indentation. A lot. Don't mix tabs and spaces.
+
+Each task starts with a dash ( - ) because it's a list item in YAML.
+The module (apt, yum, service etc.) goes under the task name without a dash
+because it's not a list, it's just a block of key-value pairs.
+
+  tasks:
+    - name: Install Apache    <-- dash here, it's a list item
+      apt:                    <-- no dash, this is the module
+        name: apache2
+        state: present
+
+---------------------------------------------------------------
+STATE
+---------------------------------------------------------------
+state is basically telling Ansible what you want the end result to be.
+
+  state: present    install it if it's not already there
+  state: absent     remove it
+  state: started    make sure the service is running
+  state: stopped    make sure it's not running
+  state: restarted  force a restart regardless
+
+One thing worth knowing - Ansible is idempotent, meaning you can run
+the same playbook 10 times and it won't break anything. If the package
+is already installed it just skips it.
+
+---------------------------------------------------------------
+apt vs yum vs dnf - don't mix these up
+---------------------------------------------------------------
+The module you use depends on the distro.
+
+  apt  = Ubuntu/Debian
+  yum  = older RHEL, CentOS
+  dnf  = newer RHEL, CentOS, Fedora (what I'm on now)
+
+I got burned by this. Was following a tutorial that used yum and just
+copy-pasted it without thinking. Obvious in hindsight but easy to miss
+when you're starting out.
+
+Also the package names can differ between distros:
+  Ubuntu  -->  apache2
+  RHEL    -->  httpd
+Same software, different names.
+
+---------------------------------------------------------------
+ERROR I HIT - using yum on Ubuntu
+---------------------------------------------------------------
+fatal: [localhost]: FAILED! => {
+  "ansible_facts": {"pkg_mgr": "apt"},
+  "msg": "Could not detect which major revision of dnf is in use...
+          You should manually specify use_backend..."
+}
+
+What happened: the playbook had the yum module but I was on Ubuntu which
+uses apt. Ansible detected apt as the package manager and threw an error
+because yum/dnf doesn't exist on that system.
+
+Fix: swap yum for apt, swap httpd for apache2.
+
+---------------------------------------------------------------
+update_cache: yes
+---------------------------------------------------------------
+Basically runs apt update before installing. Good habit to include it,
+especially on a fresh machine where the package lists might be outdated.
+
+  - name: Install Apache
+    apt:
+      name: apache2
+      state: present
+      update_cache: yes
+
+---------------------------------------------------------------
+SERVICE MODULE
+---------------------------------------------------------------
+Installing a package doesn't start it automatically. You need a separate task.
+
+  - name: Start Apache
+    service:
+      name: apache2
+      state: started
+      enabled: yes     <-- this makes it start on reboot too, easy to forget
+
+---------------------------------------------------------------
+FULL PLAYBOOK EXAMPLE
+---------------------------------------------------------------
+---
+- name: Install and start Apache
+  hosts: localhost
+  become: yes          # become: yes = run as sudo
+
+  tasks:
+    - name: Install Apache
+      apt:
+        name: apache2
+        state: present
+        update_cache: yes
+
+    - name: Start Apache and enable on boot
+      service:
+        name: apache2
+        state: started
+        enabled: yes
+
+---------------------------------------------------------------
+Note: Everything above is specific to Ubuntu. Package managers, package names,
+and sometimes even service names differ depending on the distro.
+apt on Ubuntu, dnf on Fedora, yum on older RHEL/CentOS - same concept,
+different syntax. Always check what your system is using before running
+a playbook you grabbed from somewhere else. Learned that the hard way.
+
+Fedora notes coming separately.
