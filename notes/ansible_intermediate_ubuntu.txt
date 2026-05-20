@@ -6,8 +6,7 @@ HOSTS FILE & VISUDO
 ---------------------------------------------------------------
 The hosts file is where you define which machines Ansible talks to.
 
-  cd /etc/ansible
-  cd /etc/ansible/playbooks
+  cd /etc/ansible                                                                                   // cd /etc/ansible/playbooks (default playbooks folder)
   ls -la && ls -ltr
   nano hosts
 
@@ -19,11 +18,14 @@ need to configure visudo. Open it with:
 
   visudo
 
-Add the line as shown in "visudo.jpeg" (screenshot in the screenshots folder).
+Add the line as shown in "visudo.png" (screenshot in the screenshots folder).
+
+            filip   ALL=(ALL) NOPASSWD: ALL
+
 This lets Ansible run tasks as root without getting blocked by permissions.
 
 become: yes in a playbook tells Ansible to execute that task as root.
-Without it, tasks that need root permissions will just fail.
+Without it, tasks that need root permissions will just fail.   (or you can just give the user root permissions)
 
   become: yes   -- add this at the play level to apply it to all tasks,
                    or per task if only some of them need it
