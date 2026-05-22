@@ -1,0 +1,11 @@
+---
+- name: Change file perms
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: File permissions
+      ansible.builtin.copy:
+        src: /home/filip/linux2
+        dest: /tmp
+        mode: 'a+w'
