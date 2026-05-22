@@ -1,0 +1,6 @@
+---
+- name: My first client's check remote connectivity
+  hosts: all
+  tasks:
+    - name: Test connectivity
+      ping:
