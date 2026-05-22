@@ -1,0 +1,55 @@
+---
+- name: Full webserver setup
+  hosts: all
+  become: yes
+
+  vars:
+    web_user: webadmin
+    web_port: 80
+    web_root: /var/www/html
+
+  tasks:
+    - name: Install required packages
+      dnf:
+        name:
+          - httpd
+          - firewalld
+          - git
+        state: present
+
+    - name: Create dedicated web user
+      user:
+        name: "{{ web_user }}"
+        shell: /bin/bash
+        state: present
+
+    - name: Start and enable firewalld
+      service:
+        name: firewalld
+        state: started
+        enabled: yes
+
+    - name: Open http port in firewall
+      firewalld:
+        port: "{{ web_port }}/tcp"
+        permanent: yes
+        state: enabled
+
+    - name: Reload firewalld
+      service:
+        name: firewalld
+        state: reloaded
+
+    - name: Deploy index.html
+      copy:
+        dest: "{{ web_root }}/index.html"
+        content: |
+          <h1>Deployed by Ansible on Fedora!</h1>
+        owner: "{{ web_user }}"
+        mode: '0644'
+
+    - name: Start and enable httpd
+      service:
+        name: httpd
+        state: started
+        enabled: yes
