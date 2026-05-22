@@ -1,0 +1,21 @@
+---
+- name: Install apache and telnet
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Install httpd
+      dnf:
+        name: httpd
+        state: present
+
+    - name: Start httpd
+      service:
+        name: httpd
+        state: started
+        enabled: yes
+
+    - name: Install telnet
+      dnf:
+        name: telnet
+        state: present
