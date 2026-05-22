@@ -10,9 +10,13 @@
 Written while learning how Ansible works, covering tasks like package management, service configuration and system automation. The playbooks are organized by topic and work across both Debian based and RPM based distributions. Feel free to clone, explore and adapt any playbook to your own setup.
 
 
-## How to run ?
+## How to run (Ubuntu)?
 
 ```bash
 ansible-playbook playbooks/apache.yml -i localhost,
 ```
+## How to run (Fedora)?
 
+```bash
+ansible-playbook playbooks-fedora/webserver_setup.yml -i localhost,
+```
