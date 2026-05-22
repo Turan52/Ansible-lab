@@ -1,0 +1,33 @@
+---
+- name: Install and configure apache
+  hosts: localhost
+  become: yes
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install apache2
+      apt:
+        name: apache2
+        state: present
+
+    - name: Start and enable apache2
+      service:
+        name: apache2
+        state: started
+        enabled: yes
+
+    - name: Open port 80 in UFW
+      ufw:
+        rule: allow
+        port: 80
+        proto: tcp
+
+    - name: Deploy test page
+      copy:
+        dest: /var/www/html/index.html
+        content: |
+          <h1>Apache is running on ubuntu</h1>
+        mode: '0644'
