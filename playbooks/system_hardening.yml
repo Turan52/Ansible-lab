@@ -1,0 +1,88 @@
+---
+- name: System hardening
+  hosts: all
+  become: yes
+
+  vars:
+    admin_user: secadmin
+    ssh_port: 2222
+    allowed_group: sshusers
+
+  tasks:
+    - name: Update all packages
+      apt:
+        upgrade: yes
+        update_cache: yes
+
+    - name: Install security packages
+      apt:
+        name:
+          - ufw
+          - fail2ban
+          - unattended-upgrades
+        state: present
+
+    - name: Create admin user
+      user:
+        name: "{{ admin_user }}"
+        shell: /bin/bash
+        groups: sudo
+        append: yes
+        state: present
+
+    - name: Create ssh allowed group
+      group:
+        name: "{{ allowed_group }}"
+        state: present
+
+    - name: Add admin user to ssh group
+      user:
+        name: "{{ admin_user }}"
+        groups: "{{ allowed_group }}"
+        append: yes
+
+    - name: Harden SSH config
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+      with_items:
+        - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin no' }
+        - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
+        - { regexp: '^#?Port', line: 'Port {{ ssh_port }}' }
+      notify:
+        - Restart ssh
+
+    - name: Enable UFW and deny incoming by default
+      ufw:
+        state: enabled
+        policy: deny
+        direction: incoming
+
+    - name: Allow custom SSH port
+      ufw:
+        rule: allow
+        port: "{{ ssh_port }}"
+        proto: tcp
+
+    - name: Allow http and https
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      with_items:
+        - 80
+        - 443
+
+    - name: Start and enable fail2ban
+      service:
+        name: fail2ban
+        state: started
+        enabled: yes
+
+  handlers:
+    - name: Restart ssh
+      service:
+        name: ssh
+        state: restarted
