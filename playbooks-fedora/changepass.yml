@@ -1,0 +1,11 @@
+--
+### Btw it requires python3-passlib on the control node: "dnf install python3-passlib"
+- name: Add or update user password
+  hosts: all
+  become: yes
+  tasks:
+    - name: Change "george" password
+      user:
+        name: george
+        update_password: always
+        password: "{{ newpassword | password_hash('sha512') }}"
