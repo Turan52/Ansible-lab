@@ -1,0 +1,27 @@
+---
+- name: Manage cron jobs
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Schedule disk usage check every day at 20:00
+      cron:
+        name: "disk usage check"
+        minute: "0"
+        hour: "0"
+        job: "df -h >> /var/log/disk_usage.log"
+        state: present
+
+    - name: Schedule system update every Sunday at 3am
+      cron:
+        name: "weekly system update"
+        minute: "0"
+        hour: "3"
+        weekday: "0"
+        job: "dnf update -y >> /var/log/dnf_update.log"
+        state: present
+
+    - name: Remove a cron job
+      cron:
+        name: "disk usage check"
+        state: absent
