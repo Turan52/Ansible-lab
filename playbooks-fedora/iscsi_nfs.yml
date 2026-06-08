@@ -1,0 +1,60 @@
+---
+- name: Configure ISCSI target and NFS share
+  hosts: all
+  become: yes
+
+  vars:
+    nfs_share_path: /srv/nfs/share
+    nfs_client_network: 192.168.#.#/##
+
+  tasks:
+    - name: Install targetcli and nfs-utils
+      dnf:
+        name:
+          - targetcli
+          - nfs-utils
+        state: present
+
+    - name: Create NFS share directory
+      file:
+        path: "{{ nfs_share_path }}"
+        state: directory
+        mode: 0755
+        owner: nobody
+        group: nobody
+
+    - name: Configure NFS export
+      lineinfile:
+        path: /etc/exports
+        line: "{{ nfs_share_path }} {{ nfs_client_network }}(rw,sync,no_root_squash)"
+        state: present
+        create: yes
+
+    - name: Start and enable NFS server
+      service:
+        name: nfs-server
+        state: started
+        enabled: yes
+
+    - name: Export NFS shares
+      command: exportfs -ra
+
+    - name: Start and enable targetcli (iSCSI)
+      service:
+        name: target
+        state: started
+        enabled: yes
+
+    - name: Allow NFS through firewall
+      firewalld:
+        service: nfs
+        permanent: yes
+        state: enabled
+        immediate: yes
+
+    - name: Allow iSCSI through firewall
+      firewalld:
+        service: iscsi-target
+        permanent: yes
+        state: enabled
+        immediate: yes
